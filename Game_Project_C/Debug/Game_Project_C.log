@@ -1,0 +1,25 @@
+﻿  main.cpp
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_SetMainReady przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_GetError przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_FreeSurface przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_CreateWindow przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_DestroyWindow przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_PollEvent przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_PushEvent przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_CreateRenderer przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_CreateTextureFromSurface przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_SetRenderDrawColor przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_RenderClear przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_RenderCopyEx przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_RenderPresent przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_DestroyRenderer przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_GetTicks przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_Init przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _SDL_Quit przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _IMG_Init przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _IMG_Quit przywołany w funkcji _main
+main.obj : error LNK2019: nierozpoznany symbol zewnętrzny _IMG_Load przywołany w funkcji _main
+D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\SDL2.lib : warning LNK4272: wystąpił konflikt typu maszyny biblioteki „x64” z typem maszyny docelowej „x86”
+D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\SDL2main.lib : warning LNK4272: wystąpił konflikt typu maszyny biblioteki „x64” z typem maszyny docelowej „x86”
+D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\SDL2_image.lib : warning LNK4272: wystąpił konflikt typu maszyny biblioteki „x64” z typem maszyny docelowej „x86”
+D:\Github\Game_Project_C\Debug\Game_Project_C.exe : fatal error LNK1120: liczba nierozpoznanych elementów zewnętrznych: 20
