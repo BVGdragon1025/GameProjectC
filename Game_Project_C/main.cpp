@@ -3,6 +3,23 @@
 #include "libs/SDL2/SDL.h"
 #include "libs/SDL2/SDL_image.h"
 
+int horizontalRes = 1920;
+int verticalRes = 1080;
+
+float xPos = horizontalRes / 2;
+float yPos = verticalRes / 2;
+
+int currentXPos = xPos;
+int currentYPos = yPos;
+
+float speed = 1.0f;
+
+uint32_t lastTickTime = 0;
+uint32_t currentTickTime = 0;
+uint32_t deltaTime = 0;
+
+int x = xPos;
+int y = yPos;
 
 uint32_t CalculateDeltaTime(uint32_t* lastTickTime, uint32_t* currentTickTime) {
 	*currentTickTime = SDL_GetTicks();
@@ -14,24 +31,6 @@ uint32_t CalculateDeltaTime(uint32_t* lastTickTime, uint32_t* currentTickTime) {
 
 int main()
 {
-	int horizontalRes = 1280;
-	int verticalRes = 720;
-
-	float xPos = horizontalRes / 2;
-	float yPos = verticalRes / 2;
-
-	int currentXPos = xPos;
-	int currentYPos = yPos;
-
-	float speed = 1.0f;
-
-	uint32_t lastTickTime = 0;
-	uint32_t currentTickTime = 0;
-	uint32_t deltaTime = 0;
-
-	int x = xPos;
-	int y = yPos;
-
 	// Init SDL libraries
 	SDL_SetMainReady(); // Just leave it be
 	int result = 0;
@@ -128,6 +127,7 @@ int main()
 					case SDL_BUTTON_LEFT:
 						printf("Left mouse button pressed\n");
 						SDL_GetMouseState(&currentXPos, &currentYPos);
+						speed = 1.0f;
 						break;
 					case SDL_BUTTON_RIGHT:
 						printf("Right mouse button pressed\n");
@@ -172,8 +172,8 @@ int main()
 
 		rect.x = (int)round(x - imgX); // Counting from the image's center but that's up to you
 		rect.y = (int)round(y - imgY); // Counting from the image's center but that's up to you
-		rect.w = (int)tex_width;
-		rect.h = (int)tex_height;
+		rect.w = (int)imgX * 2;
+		rect.h = (int)imgY * 2;
 
 		SDL_RenderCopyEx(renderer, // Already know what is that
 			texture, // The image
