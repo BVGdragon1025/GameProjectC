@@ -11,29 +11,6 @@ uint32_t CalculateDeltaTime(uint32_t* lastTickTime, uint32_t* currentTickTime) {
 	return deltaTime;
 }
 
-int CalculateX(int x, float currentX, float imgX, int horizontalRes, float speed, uint32_t deltaTime) {
-	if (currentX < x && (x - imgX) > 0) {
-		x -= speed * deltaTime;
-		return x;
-	}
-	else if (currentX > x && (x + imgX) < horizontalRes) {
-		x += speed * deltaTime;
-		return x;
-	}
-	return 0;
-}
-
-int CalculateY(int y, float currentY, float imgY, int verticalRes, float speed, uint32_t deltaTime) {
-	if (currentY < y && (y - imgY) > 0) {
-		y -= speed * deltaTime;
-		return y;
-	}
-	else if (currentY > y && (y + imgY) < verticalRes) {
-		y += speed * deltaTime;
-		return y;
-	}
-	return 0;
-}
 
 int main()
 {
@@ -173,19 +150,28 @@ int main()
 		deltaTime = CalculateDeltaTime(&lastTickTime, &currentTickTime);
 
 		// The coordinates (could be anything)
-		
+		double imgX = tex_width / 2;  //Moved the equation here, to not have it hardcoded as much :)
+		double imgY = tex_height / 2;  //As well, as this equation...
+
+		if (currentXPos < x && (x - imgX) > 0) {
+			x -= speed * deltaTime;
+		}
+		else if (currentXPos > x && (x + imgX) < horizontalRes) {
+			x += speed * deltaTime;
+		}
+		if (currentYPos < y && (y - imgY) > 0) {
+			y -= speed * deltaTime;
+		}
+		else if (currentYPos > y && (y + imgY) < verticalRes) {
+			y += speed * deltaTime;
+		}
+
 
 		// Here is the rectangle where the image will be on the screen
 		SDL_Rect rect;
 
-		double imgX = x - tex_width / 2;  //Moved the equation here, to not have it hardcoded as much :)
-		double imgY = y - tex_height / 2;  //As well, as this equation...
-		
-		x = CalculateX(xPos, currentXPos, imgX, horizontalRes, speed, deltaTime);
-		y = CalculateY(yPos, currentYPos, imgY, verticalRes, speed, deltaTime);
-
-		rect.x = (int)round(imgX); // Counting from the image's center but that's up to you
-		rect.y = (int)round(imgY); // Counting from the image's center but that's up to you
+		rect.x = (int)round(x - imgX); // Counting from the image's center but that's up to you
+		rect.y = (int)round(y - imgY); // Counting from the image's center but that's up to you
 		rect.w = (int)tex_width;
 		rect.h = (int)tex_height;
 
