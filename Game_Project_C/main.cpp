@@ -11,20 +11,11 @@ int verticalRes = 1080;
 int gridWidth = 15;
 int gridHeight = 11;
 
-float xPos = horizontalRes / 2;
-float yPos = verticalRes / 2;
-
-int currentXPos = xPos;
-int currentYPos = yPos;
-
 float speed = 1.0f;
 
 uint32_t lastTickTime = 0;
 uint32_t currentTickTime = 0;
 uint32_t deltaTime = 0;
-
-int x = xPos;
-int y = yPos;
 
 // Loading an image
 char image_path[] = "img/image.png";
@@ -218,8 +209,48 @@ int main()
 	SDL_Window* window = GetWindow();
 	SDL_Renderer* renderer = InitializeSDL(window);
 
+	int width = horizontalRes / gridWidth;
+	int height = verticalRes / gridHeight;
+
+	Vector2 currentPosition{ 5, 10 };
+	Vector2 endGoal = currentPosition;
+	Vector2 currentBlockPosition = currentPosition;
+
+	Player player;
+	Obstacle obstacle;
+	SDL_Surface* surface;
+
+	surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
+
+	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 255, 255, 255));
+	player.Init(SDL_CreateTextureFromSurface(renderer, IMG_Load(image_path)), width, height, currentPosition.x, currentPosition.y);
+
+	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 64, 255, 0));
+	obstacle.Init(SDL_CreateTextureFromSurface(renderer, IMG_Load(obstacle_image)), width, height);
+
+	SDL_FreeSurface(surface);
+
+	unsigned char** gridArray = (unsigned char**)malloc(sizeof(unsigned char*) * gridHeight);
+
+	for (int i = 0; i < gridHeight; i++) {
+		gridArray[i] = (unsigned char*)malloc(sizeof(unsigned char) * gridWidth);
+		for (int j = 0; j < gridWidth; j++) {
+			gridArray[i][j] = 1;
+		}
+	}
+
+	Stack firstStack, secondStack, path;
+	Stack* current = &firstStack;
+	Stack* next = &secondStack;
+
+
+	bool isFinding = false;
+	bool isPathExists = false;
 	bool done = false;
 	SDL_Event sdl_event;
+
+	// Delta Time
+	deltaTime = CalculateDeltaTime(&lastTickTime, &currentTickTime);
 
 	// The main loop
 	// Every iteration is a frame
@@ -229,82 +260,72 @@ int main()
 		// That could be key downs, mouse movement, ALT+F4 or many others
 		while (SDL_PollEvent(&sdl_event))
 		{
-			if (sdl_event.type == SDL_QUIT) // The user wants to quit
-			{
-				done = true;
-			}
-			else if (sdl_event.type == SDL_KEYDOWN) // A key was pressed
-			{
-				switch (sdl_event.key.keysym.sym) // Which key?
-				{
-				case SDLK_ESCAPE: // Posting a quit message to the OS queue so it gets processed on the next step and closes the game
-					SDL_Event event;
-					event.type = SDL_QUIT;
-					event.quit.type = SDL_QUIT;
-					event.quit.timestamp = SDL_GetTicks();
-					SDL_PushEvent(&event);
-					break;
-					// Other keys here
-				default:
-					break;
-				}
-			}
-			else if (sdl_event.type == SDL_MOUSEBUTTONDOWN)
-				switch (sdl_event.button.button)
-				{
-					case SDL_BUTTON_LEFT:
-						printf("Left mouse button pressed\n");
-						SDL_GetMouseState(&currentXPos, &currentYPos);
-						speed = 1.0f;
-						break;
-				}
-					
-			// More events here?
+			Process(sdl_event, done, current, player, endGoal, width, height, gridArray, isFinding);
 		}
 
 		// Clearing the screen
 		SDL_RenderClear(renderer);
 
+		DrawObstacles(gridArray, obstacle, renderer);
+
 		// All drawing goes here
 
 		// Let's draw a sample image
 
-		// Delta Time
-		deltaTime = CalculateDeltaTime(&lastTickTime, &currentTickTime);
+		while (isFinding && !isPathExists) {
+			FindPath(current, gridArray, next, path, isPathExists);
+			current->DeleteLastElement();
+			if (!current->lastElement) {
+				Stack* temp = current;
+				current = next;
+				next = temp;
+			}
 
-		// The coordinates (could be anything)
-		double imgX = tex_width / 2;  //Moved the equation here, to not have it hardcoded as much :)
-		double imgY = tex_height / 2;  //As well, as this equation...
+			while (isPathExists) {
+				unsigned char x = path.lastElement->x;
+				unsigned char y = path.lastElement->y;
+				if (x - 1 >= 0 && gridArray[y][x - 1] == gridArray[y][x] - 1) {
+					path.AddElement(x - 1, y);
+				}
+				else if (x + 1 < gridWidth && gridArray[y][x + 1] == gridArray[y][x] - 1)
+				{
+					path.AddElement(x + 1, y);
+				}
+				else if (y - 1 >= 0 && gridArray[y - 1][x] == gridArray[y][x] - 1)
+				{
+					path.AddElement(x, y - 1);
+				}
+				else if (y + 1 < gridHeight && gridArray[y + 1][x] == gridArray[y][x] - 1)
+				{
+					path.AddElement(x, y + 1);
+				}
+				if (gridArray[y][x] == 3)
+				{
+					for (int i = 0; i < gridHeight; i++)
+					{
+						for (int j = 0; j < gridWidth; j++)
+						{
+							gridArray[i][j] = 1;
+						}
+					}
+					current->Clear();
+					next->Clear();
+					isFinding = false;
+					isPathExists = false;
+					break;
 
-		if (currentXPos < x && (x - imgX) > 0) {
-			x -= speed * deltaTime;
+				}
+			}
 		}
-		else if (currentXPos > x && (x + imgX) < horizontalRes) {
-			x += speed * deltaTime;
-		}
-		if (currentYPos < y && (y - imgY) > 0) {
-			y -= speed * deltaTime;
-		}
-		else if (currentYPos > y && (y + imgY) < verticalRes) {
-			y += speed * deltaTime;
+
+		if (path.lastElement) {
+			player.position.x = path.lastElement->x;
+			player.position.y = path.lastElement->y;
+			path.DeleteLastElement();
 		}
 
-
-		// Here is the rectangle where the image will be on the screen
-		SDL_Rect rect;
-
-		rect.x = (int)round(x - imgX); // Counting from the image's center but that's up to you
-		rect.y = (int)round(y - imgY); // Counting from the image's center but that's up to you
-		rect.w = (int)imgX * 2;
-		rect.h = (int)imgY * 2;
-
-		SDL_RenderCopyEx(renderer, // Already know what is that
-			texture, // The image
-			nullptr, // A rectangle to crop from the original image. Since we need the whole image that can be left empty (nullptr)
-			&rect, // The destination rectangle on the screen.
-			0, // An angle in degrees for rotation
-			nullptr, // The center of the rotation (when nullptr, the rect center is taken)
-			SDL_FLIP_NONE); // We don't want to flip the image
+		
+		player.Render(renderer);
 
 // Showing the screen to the player
 		SDL_RenderPresent(renderer);
@@ -314,6 +335,14 @@ int main()
 
 	// If we reached here then the main loop stoped
 	// That means the game wants to quit
+
+	for (int i = 0; i < gridHeight; i++) {
+		free(gridArray[i]);
+	}
+
+	free(gridArray);
+
+	obstacle.Destroy();
 
 	// Shutting down the renderer
 	SDL_DestroyRenderer(renderer);
@@ -328,4 +357,144 @@ int main()
 
 	// Done.
 	return 0;
+}
+
+void MoveTo(Player& player, Stack& path, SDL_Renderer* renderer) {
+	while (player.position.x < path.lastElement->x || player.position.x > path.lastElement->x || player.position.y < path.lastElement->y || player.position.y > path.lastElement->y) {
+		
+		if (player.position.x < path.lastElement->x) {
+			player.position.x = player.position.x + 5.0f;
+		}
+		else if (player.position.x > path.lastElement->x) {
+			player.position.x = player.position.x - 5.0f;
+		}
+
+		if (player.position.y < path.lastElement->y) {
+			player.position.y = player.position.y + 5.0f;
+		}
+		else if (player.position.y > path.lastElement->y) {
+			player.position.y = player.position.y - 5.0f;
+		}
+	}
+}
+
+void FindPath(Stack* currentCheck, unsigned char** gridArray, Stack* nextCheck, Stack& path, bool& isPathGenerated){
+	unsigned char x = currentCheck->lastElement->x;
+	unsigned char y = currentCheck->lastElement->y;
+
+	if (x - 1 >= 0 && (gridArray[y][x - 1] == 1 || gridArray[y][x - 1] == 255)) {
+		if (gridArray[y][x - 1] != 255) {
+			gridArray[y][x - 1] = gridArray[y][x] + 1;
+			nextCheck->AddElement(x - 1, y);
+		}
+		else {
+			gridArray[y][x - 1] = gridArray[y][x] + 1;
+			path.AddElement(x - 1, y);
+			isPathGenerated = true;
+		}
+	}
+
+	if (y - 1 >= 0 && (gridArray[y - 1][x] == 1 || gridArray[y - 1][x] == 255))
+	{
+		if (gridArray[y - 1][x] != 255)
+		{
+			gridArray[y - 1][x] = gridArray[y][x] + 1;
+			nextCheck->AddElement(x, y - 1);
+		}
+		else
+		{
+			gridArray[y - 1][x] = gridArray[y][x] + 1;
+			path.AddElement(x, y - 1);
+			isPathGenerated = true;
+		}
+
+	}
+
+	if (x + 1 < gridWidth && (gridArray[y][x + 1] == 1 || gridArray[y][x + 1] == 255))			//RIGTH POINT
+	{
+		if (gridArray[y][x + 1] != 255)
+		{
+			gridArray[y][x + 1] = gridArray[y][x] + 1;
+			nextCheck->AddElement(x + 1, y);
+		}
+		else
+		{
+			gridArray[y][x + 1] = gridArray[y][x] + 1;
+			path.AddElement(x + 1, y);
+			isPathGenerated = true;
+		}
+	}
+
+	if (y + 1 < gridHeight && (gridArray[y + 1][x] == 1 || gridArray[y + 1][x] == 255))		//DOWN POINT
+	{
+		if (gridArray[y + 1][x])
+		{
+			if (gridArray[y + 1][x] != 255)
+			{
+				gridArray[y + 1][x] = gridArray[y][x] + 1;
+				nextCheck->AddElement(x, y + 1);
+			}
+			else
+			{
+				gridArray[y + 1][x] = gridArray[y][x] + 1;
+				path.AddElement(x, y + 1);
+				isPathGenerated = true;
+			}
+		}
+	}
+
+
+}
+
+void DrawObstacles(unsigned char** gridArray, Obstacle& RedBlock, SDL_Renderer* renderer) {
+	for (int i = 1; i < gridWidth - 1; i++) {
+		gridArray[gridHeight / 2][i] = 0;
+		RedBlock.RenderObstacle(renderer, i, gridHeight / 2);
+	}
+}
+
+void Process(SDL_Event& sdl_event, bool& isDone, Stack* check, Player& player, Vector2& endPosition, int width, int height, unsigned char** gridArray, bool& isFinding) {
+	if (sdl_event.type == SDL_QUIT) // The user wants to quit
+	{
+		isDone = true;
+	}
+	else if (sdl_event.type == SDL_KEYDOWN) // A key was pressed
+	{
+		switch (sdl_event.key.keysym.sym) // Which key?
+		{
+		case SDLK_ESCAPE: // Posting a quit message to the OS queue so it gets processed on the next step and closes the game
+			SDL_Event event;
+			event.type = SDL_QUIT;
+			event.quit.type = SDL_QUIT;
+			event.quit.timestamp = SDL_GetTicks();
+			SDL_PushEvent(&event);
+			break;
+			// Other keys here
+		default:
+			break;
+		}
+	}
+	else if (sdl_event.type == SDL_MOUSEBUTTONDOWN) {
+		switch (sdl_event.button.button) {
+			case SDL_BUTTON_LEFT:
+			{
+				int x, y;
+				printf("Left mouse button pressed\n");
+				SDL_GetMouseState(&x, &y);
+				speed = 1.0f;
+				check->AddElement((int)player.position.x, (int)player.position.y);
+				endPosition.x = (int)(x / width);
+				endPosition.y = (int)(y / height);
+				gridArray[(int)player.position.y][(int)player.position.x] = 2;
+				gridArray[(int)endPosition.y][(int)endPosition.x] = 255;
+				isFinding = true;
+				break;
+			}
+			default:
+				break;
+		}
+
+	}
+		
+	// More events here?
 }
