@@ -1,12 +1,6 @@
-﻿  main.cpp
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(9,12): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(10,12): warning C4244: "inicjowanie": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(12,17): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(13,17): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(21,7): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(22,7): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(157,26): warning C4244: "-=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(160,26): warning C4244: "+=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(163,26): warning C4244: "-=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(166,26): warning C4244: "+=": konwersja z "float" do "int", możliwa utrata danych
-  Game_Project_C.vcxproj -> D:\Github\Game_Project_C\x64\Debug\Game_Project_C.exe
+﻿  Game_Project_C.vcxproj -> D:\Github\Game_Project_C\x64\Debug\Game_Project_C.exe
+  D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\libpng16-16.dll
+  D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\SDL2.dll
+  D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\SDL2_image.dll
+  D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\zlib1.dll
+  4 File(s) copied
