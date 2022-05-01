@@ -3,7 +3,8 @@
 #define SDL_MAIN_HANDLED
 #include "libs/SDL2/SDL.h"
 #include "libs/SDL2/SDL_image.h"
-#include "main.h";
+#include "main.h"
+#include <Windows.h>
 
 int horizontalRes = 1920;
 int verticalRes = 1080;
@@ -11,7 +12,7 @@ int verticalRes = 1080;
 int gridWidth = 15;
 int gridHeight = 11;
 
-float speed = 1.0f;
+float speed = 1000.0f;
 
 uint32_t lastTickTime = 0;
 uint32_t currentTickTime = 0;
@@ -322,6 +323,7 @@ int main()
 			player.position.x = path.lastElement->x;
 			player.position.y = path.lastElement->y;
 			path.DeleteLastElement();
+			Sleep(speed * deltaTime);
 		}
 
 		
@@ -363,17 +365,17 @@ void MoveTo(Player& player, Stack& path, SDL_Renderer* renderer) {
 	while (player.position.x < path.lastElement->x || player.position.x > path.lastElement->x || player.position.y < path.lastElement->y || player.position.y > path.lastElement->y) {
 		
 		if (player.position.x < path.lastElement->x) {
-			player.position.x = player.position.x + 5.0f;
+			player.position.x += speed * deltaTime;
 		}
 		else if (player.position.x > path.lastElement->x) {
-			player.position.x = player.position.x - 5.0f;
+			player.position.x -= speed * deltaTime;
 		}
 
 		if (player.position.y < path.lastElement->y) {
-			player.position.y = player.position.y + 5.0f;
+			player.position.y += speed * deltaTime;
 		}
 		else if (player.position.y > path.lastElement->y) {
-			player.position.y = player.position.y - 5.0f;
+			player.position.y -= speed * deltaTime;
 		}
 	}
 }
@@ -410,7 +412,7 @@ void FindPath(Stack* currentCheck, unsigned char** gridArray, Stack* nextCheck, 
 
 	}
 
-	if (x + 1 < gridWidth && (gridArray[y][x + 1] == 1 || gridArray[y][x + 1] == 255))			//RIGTH POINT
+	if (x + 1 < gridWidth && (gridArray[y][x + 1] == 1 || gridArray[y][x + 1] == 255))
 	{
 		if (gridArray[y][x + 1] != 255)
 		{
@@ -425,7 +427,7 @@ void FindPath(Stack* currentCheck, unsigned char** gridArray, Stack* nextCheck, 
 		}
 	}
 
-	if (y + 1 < gridHeight && (gridArray[y + 1][x] == 1 || gridArray[y + 1][x] == 255))		//DOWN POINT
+	if (y + 1 < gridHeight && (gridArray[y + 1][x] == 1 || gridArray[y + 1][x] == 255))
 	{
 		if (gridArray[y + 1][x])
 		{

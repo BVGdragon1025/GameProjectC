@@ -1,19 +1,19 @@
 ﻿  main.cpp
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(6,10): warning C4067: nieoczekiwane tokeny występujące po dyrektywie preprocesora - oczekiwano nowego wiersza
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(61,16): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
 D:\Github\Game_Project_C\Game_Project_C\main.cpp(62,16): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(83,15): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(63,16): warning C4244: "=": konwersja z "double" do "int", możliwa utrata danych
 D:\Github\Game_Project_C\Game_Project_C\main.cpp(84,15): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(88,56): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(88,44): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(226,125): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(226,106): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(366,42): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(369,42): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(373,42): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(376,42): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(452,51): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
-D:\Github\Game_Project_C\Game_Project_C\main.cpp(452,37): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(85,15): warning C4244: "=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(89,56): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(89,44): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(227,125): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(227,106): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(326,16): warning C4244: "argument": konwersja z "float" do "DWORD", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(368,31): warning C4244: "+=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(371,31): warning C4244: "-=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(375,31): warning C4244: "+=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(378,31): warning C4244: "-=": konwersja z "float" do "int", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(454,51): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
+D:\Github\Game_Project_C\Game_Project_C\main.cpp(454,37): warning C4244: "argument": konwersja z "int" do "float", możliwa utrata danych
   Game_Project_C.vcxproj -> D:\Github\Game_Project_C\x64\Debug\Game_Project_C.exe
   D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\libpng16-16.dll
   D:\Github\Game_Project_C\Game_Project_C\libs\SDL2\dll\SDL2.dll
