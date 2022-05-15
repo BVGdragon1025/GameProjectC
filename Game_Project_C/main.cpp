@@ -5,6 +5,7 @@
 #include "libs/SDL2/SDL_image.h"
 #include "main.h"
 #include <Windows.h>
+#include <assert.h>
 
 int horizontalRes = 1920;
 int verticalRes = 1080;
@@ -25,6 +26,40 @@ char obstacle_image[] = "img/obstacle.png";
 struct Vector2 {
 	int x;
 	int y;
+
+	Vector2 operator +(Vector2 right) {
+		return Vector2{ x + right.x, y + right.y };
+	}
+
+	Vector2 operator -(Vector2 right) {
+		return Vector2{ x - right.x, y - right.y };
+	}
+
+	Vector2 operator *(float factor) {
+		return Vector2{ (int)(x * factor), (int)(y * factor) };
+	}
+
+	Vector2 operator /(float factor) {
+		assert(factor != 0.0f && "Factor must be non-zero");
+
+		return Vector2{ (int)(x / factor), (int)(y / factor) };
+	}
+
+	Vector2 operator *(Vector2 right) {
+		return Vector2{ x * right.x, y * right.y };
+	}
+
+	int Dot(Vector2 right) {
+		return x * right.x + y * right.y;
+	}
+
+	float Length() {
+		return (float)sqrt(x * x + y * y);
+	}
+
+	explicit operator bool() {
+		return x || y;  //Bool zwraca true dla wartoœci nie zerowej
+	}
 };
 
 struct Vector4 {
