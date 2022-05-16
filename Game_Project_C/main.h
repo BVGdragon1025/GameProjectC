@@ -5,6 +5,7 @@ struct ScreenResolution;
 struct Player;
 struct Obstacle;
 struct Vector2;
+struct Vector2f;
 struct Vector4;
 struct Stack;
 void MoveTo(Player& player, Stack& path, SDL_Renderer* renderer);

@@ -62,6 +62,44 @@ struct Vector2 {
 	}
 };
 
+struct Vector2f {
+	float x;
+	float y;
+
+	Vector2f operator +(Vector2f right) {
+		return Vector2f{ x + right.x,y + right.y };
+	}
+	Vector2f operator -(Vector2f right) {
+		return Vector2f{ x - right.x, y - right.y };
+	}
+
+	Vector2f operator *(float factor) {
+		return Vector2f{ x * factor, y * factor };
+	}
+
+	Vector2f operator /(float factor) {
+		assert(factor != 0.0f && "Factor must be non-zero");
+
+		return Vector2f{ x / factor, y / factor };
+	}
+
+	Vector2f operator *(Vector2f right) {
+		return Vector2f{ x * right.x, y * right.y };
+	}
+
+	int Dot(Vector2f right) {
+		return x * right.x + y * right.y;
+	}
+
+	float Length() {
+		return (float)sqrt(x * x + y * y);
+	}
+
+	explicit operator bool() {
+		return x || y;  //Bool zwraca true dla wartoœci nie zerowej
+	}
+};
+
 struct Vector4 {
 	int r;
 	int g;
