@@ -7,8 +7,8 @@
 #include <Windows.h>
 #include <assert.h>
 
-int horizontalRes = 1920;
-int verticalRes = 1080;
+int horizontalRes = 1280;
+int verticalRes = 720;
 
 int gridWidth = 15;
 int gridHeight = 11;
@@ -26,6 +26,8 @@ char obstacle_image[] = "img/obstacle.png";
 struct Vector2 {
 	int x;
 	int y;
+
+	Vector2(int x, int y);
 
 	Vector2 operator +(Vector2 right) {
 		return Vector2{ x + right.x, y + right.y };
@@ -66,6 +68,8 @@ struct Vector2f {
 	float x;
 	float y;
 
+	Vector2f(float x, float y);
+
 	Vector2f operator +(Vector2f right) {
 		return Vector2f{ x + right.x,y + right.y };
 	}
@@ -105,30 +109,22 @@ struct Vector4 {
 	int g;
 	int b;
 	int a;
-	void Init(int redValue, int greenValue, int blueValue, int alphaValue);
+
+	Vector4(int red, int green, int blue, int alfa);
 };
 
-void Vector4::Init(int redValue, int greenValue, int blueValue, int alphaValue) {
-	r = redValue;
-	g = greenValue;
-	b = blueValue;
-	a = alphaValue;
-
-}
-
 struct Obstacle {
+
 	SDL_Texture* texture;
 	Vector2 size;
-	void Init(SDL_Texture* textureData, int textureWidth, int textureHeight);
+
+	Obstacle(SDL_Texture* texture, Vector2 size);
+	Obstacle(SDL_Texture* texture, int xSize, int ySize);
+	Obstacle(SDL_Renderer* renderer, SDL_Surface* surface);
+
 	void RenderObstacle(SDL_Renderer* renderer, float x, float y);
 	void Destroy();
 };
-
-void Obstacle::Init(SDL_Texture* textureData, int textureWidth, int textureHeight) {
-	texture = textureData;
-	size.x = textureWidth;
-	size.y = textureHeight;
-}
 
 void Obstacle::RenderObstacle(SDL_Renderer* renderer, float x, float y) {
 	SDL_Rect rect;
@@ -147,16 +143,12 @@ void Obstacle::Destroy() {
 struct Player {
 	Obstacle obstacle;
 	Vector2 position;
-	void Init(SDL_Texture* texture, int width, int height, float xPosition, float yPosition);
+	Player(Obstacle obstacle, Vector2* textureParams, Vector2* position);
+	Player(Obstacle obstacle, int xSize, int ySize, Vector2 position);
+	Player(Obstacle* obstacle, int xSize, int ySize, Vector2 position);
 	void Render(SDL_Renderer* renderer);
 	
 };
-
-void Player::Init(SDL_Texture* texture, int width, int height, float xPosition, float yPosition) {
-	obstacle.Init(texture, width, height);
-	position.x = xPosition;
-	position.y = yPosition;
-}
 
 void Player::Render(SDL_Renderer* renderer) {
 	obstacle.RenderObstacle(renderer, position.x, position.y);
@@ -210,8 +202,7 @@ uint32_t CalculateDeltaTime(uint32_t* lastTickTime, uint32_t* currentTickTime) {
 
 
 SDL_Renderer* InitializeSDL(SDL_Window* window) {
-	Vector4 backgroundColor;
-	backgroundColor.Init(20, 150, 39, 255);
+	Vector4* backgroundColor = new Vector4(20, 150, 39, 255);
 
 	// Init SDL libraries
 	SDL_SetMainReady(); // Just leave it be
@@ -236,7 +227,7 @@ SDL_Renderer* InitializeSDL(SDL_Window* window) {
 		abort();
 
 	// Setting the color of an empty window (RGBA). You are free to adjust it.
-	SDL_SetRenderDrawColor(renderer, backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
+	SDL_SetRenderDrawColor(renderer, backgroundColor->r, backgroundColor->g, backgroundColor->b, backgroundColor->a);
 
 	// Here the surface is the information about the image. It contains the color data, width, height and other info.
 	SDL_Surface* surface = IMG_Load(image_path);
@@ -286,21 +277,23 @@ int main()
 	int width = horizontalRes / gridWidth;
 	int height = verticalRes / gridHeight;
 
+	Vector2* surfaceParams = new Vector2(width, height);
+
 	Vector2 currentPosition{ 5, 10 };
 	Vector2 endGoal = currentPosition;
 	Vector2 currentBlockPosition = currentPosition;
 
-	Player player;
-	Obstacle obstacle;
 	SDL_Surface* surface;
 
 	surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
 
 	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 255, 255, 255));
-	player.Init(SDL_CreateTextureFromSurface(renderer, IMG_Load(image_path)), width, height, currentPosition.x, currentPosition.y);
+	Obstacle* playerCollider = new Obstacle(renderer, IMG_Load(image_path));
+	Player* player = new Player(playerCollider, width, height, currentPosition);
 
 	SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 64, 255, 0));
-	obstacle.Init(SDL_CreateTextureFromSurface(renderer, IMG_Load(obstacle_image)), width, height);
+	Obstacle* obstacle = new Obstacle(SDL_CreateTextureFromSurface(renderer, IMG_Load(obstacle_image)), width, height);
+	
 
 	SDL_FreeSurface(surface);
 
@@ -393,14 +386,14 @@ int main()
 		}
 
 		if (path.lastElement) {
-			player.position.x = path.lastElement->x;
-			player.position.y = path.lastElement->y;
+			player->position.x = path.lastElement->x;
+			player->position.y = path.lastElement->y;
 			path.DeleteLastElement();
 			Sleep(speed * deltaTime);
 		}
 
 		
-		player.Render(renderer);
+		player->Render(renderer);
 
 // Showing the screen to the player
 		SDL_RenderPresent(renderer);
@@ -417,7 +410,7 @@ int main()
 
 	free(gridArray);
 
-	obstacle.Destroy();
+	obstacle->Destroy();
 
 	// Shutting down the renderer
 	SDL_DestroyRenderer(renderer);
@@ -521,14 +514,14 @@ void FindPath(Stack* currentCheck, unsigned char** gridArray, Stack* nextCheck, 
 
 }
 
-void DrawObstacles(unsigned char** gridArray, Obstacle& RedBlock, SDL_Renderer* renderer) {
+void DrawObstacles(unsigned char** gridArray, Obstacle* RedBlock, SDL_Renderer* renderer) {
 	for (int i = 1; i < gridWidth - 1; i++) {
 		gridArray[gridHeight / 2][i] = 0;
-		RedBlock.RenderObstacle(renderer, i, gridHeight / 2);
+		RedBlock->RenderObstacle(renderer, i, gridHeight / 2);
 	}
 }
 
-void Process(SDL_Event& sdl_event, bool& isDone, Stack* check, Player& player, Vector2& endPosition, int width, int height, unsigned char** gridArray, bool& isFinding) {
+void Process(SDL_Event& sdl_event, bool& isDone, Stack* check, Player* player, Vector2 endPosition, int width, int height, unsigned char** gridArray, bool& isFinding) {
 	if (sdl_event.type == SDL_QUIT) // The user wants to quit
 	{
 		isDone = true;
@@ -557,10 +550,10 @@ void Process(SDL_Event& sdl_event, bool& isDone, Stack* check, Player& player, V
 				printf("Left mouse button pressed\n");
 				SDL_GetMouseState(&x, &y);
 				speed = 1.0f;
-				check->AddElement((int)player.position.x, (int)player.position.y);
+				check->AddElement((int)player->position.x, (int)player->position.y);
 				endPosition.x = (int)(x / width);
 				endPosition.y = (int)(y / height);
-				gridArray[(int)player.position.y][(int)player.position.x] = 2;
+				gridArray[(int)player->position.y][(int)player->position.x] = 2;
 				gridArray[(int)endPosition.y][(int)endPosition.x] = 255;
 				isFinding = true;
 				break;
