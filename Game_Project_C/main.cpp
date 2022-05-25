@@ -42,13 +42,13 @@ struct Character {
 
 Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath) {
 	PlaceCharacterOnGrid(position);
-	battlefield[MouseToGridPosition(position).x + 1][MouseToGridPosition(position).y + 1] = 255;
+	battlefield[MouseToGridPosition(gridPosition).x + 1][MouseToGridPosition(gridPosition).y + 1] = 255;
 	texture = SetTexture(surface, renderer, imagePath);
 }
 
 void Character::PlaceCharacterOnGrid(Vector2 position) {
-	position.x = ((position.x - 1) * gridElementWidth) + (gridElementWidth / 2);
-	position.y = ((position.y - 1) * gridElementHeight) + (gridElementHeight/ 2);
+	gridPosition.x = ((position.x - 1) * gridElementWidth) + (gridElementWidth / 2);
+	gridPosition.y = ((position.y - 1) * gridElementHeight) + (gridElementHeight/ 2);
 }
 
 void Character::MoveCharacter(Vector2 destination) {
@@ -140,8 +140,8 @@ uint32_t CalculateDeltaTime(uint32_t* lastTick, uint32_t* currentTick) {
 }
 
 Vector2 MouseToGridPosition(Vector2 mousePos) {
-	Vector2 gridPosition = { mousePos.x / gridElementWidth, mousePos.y / gridElementHeight };
-	return gridPosition;
+	Vector2 gridPos = { mousePos.x / gridElementWidth, mousePos.y / gridElementHeight };
+	return gridPos;
 }
 
 void GrassfireAlgorithm() {
