@@ -9,8 +9,8 @@
 
 typedef unsigned char uchar;
 
-const int horizontalRes = 1920;
-const int verticalRes = 1080;
+const int horizontalRes = 1280;
+const int verticalRes = 720;
 
 const int gridWidth = 15;
 const int gridHeight = 11;
@@ -18,7 +18,7 @@ const int gridHeight = 11;
 const int gridElementWidth = horizontalRes / gridWidth;
 const int gridElementHeight = verticalRes / gridHeight;
 
-uchar battlefield[17][13];
+uchar battlefield[13][17];
 
 SDL_Texture* SetTexture(SDL_Surface* surface, SDL_Renderer* renderer, const char* image_path);
 
@@ -42,7 +42,7 @@ struct Character {
 
 Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath) {
 	PlaceCharacterOnGrid(position);
-	battlefield[MouseToGridPosition(gridPosition).x + 1][MouseToGridPosition(gridPosition).y + 1] = 255;
+	battlefield[MouseToGridPosition(gridPosition).y + 1][MouseToGridPosition(gridPosition).x + 1] = 255;
 	texture = SetTexture(surface, renderer, imagePath);
 }
 
@@ -53,22 +53,22 @@ void Character::PlaceCharacterOnGrid(Vector2 position) {
 
 void Character::MoveCharacter(Vector2 destination) {
 	gridDestination = destination;
-	currentGridPosition = { gridPosition.x / gridElementWidth,gridPosition.y / gridElementHeight };
+	currentGridPosition = { gridPosition.x / gridElementWidth, gridPosition.y / gridElementHeight };
 	gridDestination.x += 1;
 	gridDestination.y += 1;
 	currentGridPosition.x += 1;
 	currentGridPosition.y += 1;
 
-	if (battlefield[gridDestination.x][gridDestination.y] != 255 && battlefield[gridDestination.x][gridDestination.y] != 200) {
-		battlefield[gridDestination.x][gridDestination.y] = 1;
+	if (battlefield[gridDestination.y][gridDestination.x] != 255 && battlefield[gridDestination.y][gridDestination.x] != 200) {
+		battlefield[gridDestination.y][gridDestination.x] = 1;
 	}
 
-	uchar playerDestination = battlefield[gridDestination.x][gridDestination.y];
-	uchar playerPos = battlefield[currentGridPosition.x][currentGridPosition.y];
-	uchar up = battlefield[currentGridPosition.x][currentGridPosition.y - 1];
-	uchar down = battlefield[currentGridPosition.x][currentGridPosition.y + 1];
-	uchar left = battlefield[currentGridPosition.x - 1][currentGridPosition.y];
-	uchar right = battlefield[currentGridPosition.x + 1][currentGridPosition.y];
+	uchar playerDestination = battlefield[gridDestination.y][gridDestination.x];
+	uchar playerPos = battlefield[currentGridPosition.y][currentGridPosition.x];
+	uchar up = battlefield[currentGridPosition.y - 1][currentGridPosition.x];
+	uchar down = battlefield[currentGridPosition.y + 1][currentGridPosition.x];
+	uchar left = battlefield[currentGridPosition.y][currentGridPosition.x - 1];
+	uchar right = battlefield[currentGridPosition.y][currentGridPosition.x + 1];
 
 	GrassfireAlgorithm();
 
@@ -78,7 +78,7 @@ void Character::MoveCharacter(Vector2 destination) {
 				gridPosition.y -= gridElementHeight;
 				pastGridPosition.y = currentGridPosition.y;
 				currentGridPosition.y -= 1;
-				battlefield[currentGridPosition.x][pastGridPosition.y] = 200;
+				battlefield[pastGridPosition.y][currentGridPosition.x] = 200;
 			}
 			Sleep(150);
 		}
@@ -87,7 +87,7 @@ void Character::MoveCharacter(Vector2 destination) {
 				gridPosition.y += gridElementWidth;
 				pastGridPosition.y = currentGridPosition.y;
 				currentGridPosition.y += 1;
-				battlefield[currentGridPosition.x][pastGridPosition.y] = 200;
+				battlefield[pastGridPosition.y][currentGridPosition.x] = 200;
 			}
 			Sleep(150);
 		}
@@ -96,7 +96,7 @@ void Character::MoveCharacter(Vector2 destination) {
 				gridPosition.x -= gridElementWidth;
 				pastGridPosition.x = currentGridPosition.x;
 				currentGridPosition.x -= 1;
-				battlefield[pastGridPosition.x][currentGridPosition.y] = 200;
+				battlefield[currentGridPosition.y][pastGridPosition.x] = 200;
 			}
 			Sleep(150);
 		}
@@ -105,7 +105,7 @@ void Character::MoveCharacter(Vector2 destination) {
 				gridPosition.x += gridElementWidth;
 				pastGridPosition.x = currentGridPosition.x;
 				currentGridPosition.x += 1;
-				battlefield[pastGridPosition.x][currentGridPosition.y] = 200;
+				battlefield[currentGridPosition.y][pastGridPosition.x] = 200;
 			}
 			Sleep(150);
 		}
@@ -123,7 +123,7 @@ struct Obstacle {
 Obstacle::Obstacle(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath) {
 	obstaclePosition = position;
 	PlaceObstacle();
-	battlefield[MouseToGridPosition(obstaclePosition).x + 1][MouseToGridPosition(obstaclePosition).y + 1] = 255;
+	battlefield[MouseToGridPosition(obstaclePosition).y + 1][MouseToGridPosition(obstaclePosition).x + 1] = 255;
 	obstacleTexture = SetTexture(surface, renderer, imagePath);
 }
 
@@ -151,40 +151,40 @@ void GrassfireAlgorithm() {
 
 		s = false;
 
-		for (int i = 0; i < 17; i++) {
+		for (int i = 0; i < (gridHeight + 2); i++) {
 
-			for (int j = 0; j < 13; j++) {
+			for (int j = 0; j < (gridWidth + 2); j++) {
 
 				uchar a = battlefield[i][j];
 
 				if (a != 0 && a != 255) {
 					uchar b = a + 1;
-					uchar gridUp = battlefield[i][j - 1];
-					uchar gridDown = battlefield[i][j + 1];
-					uchar gridLeft = battlefield[i - 1][j];
-					uchar gridRight = battlefield[i + 1][j];
+					uchar gridUp = battlefield[i - 1][j];
+					uchar gridDown = battlefield[i + 1][j];
+					uchar gridLeft = battlefield[i][j - 1];
+					uchar gridRight = battlefield[i][j + 1];
 
-					if (j > 0 && (gridUp != 255 && gridUp < b)) {
-						if (battlefield[i][j - 1] == 0) {
-							battlefield[i][j - 1] = b;
-							s = true;
-						}
-					}
-					if (j < gridHeight && (gridDown != 255 && gridDown < b)) {
-						if (battlefield[i][j + 1] == 0) {
-							battlefield[i][j + 1] = b;
-							s = true;
-						}
-					}
-					if (i > 0 && (gridLeft != 255 && gridLeft != b)) {
+					if (i > 0 && (gridUp != 255 && gridUp < b)) {
 						if (battlefield[i - 1][j] == 0) {
 							battlefield[i - 1][j] = b;
 							s = true;
 						}
 					}
-					if (i < gridWidth && (gridRight != 255 && gridRight != b)) {
+					if (j < gridHeight && (gridDown != 255 && gridDown < b)) {
 						if (battlefield[i + 1][j] == 0) {
 							battlefield[i + 1][j] = b;
+							s = true;
+						}
+					}
+					if (i > 0 && (gridLeft != 255 && gridLeft != b)) {
+						if (battlefield[i][j - 1] == 0) {
+							battlefield[i][j - 1] = b;
+							s = true;
+						}
+					}
+					if (i < gridWidth && (gridRight != 255 && gridRight != b)) {
+						if (battlefield[i][j + 1] == 0) {
+							battlefield[i][j + 1] = b;
 							s = true;
 						}
 					}
@@ -196,22 +196,22 @@ void GrassfireAlgorithm() {
 
 void SetArraySides() {
 	for (int i = 0; i < gridWidth; i++) {
-		battlefield[i][0] = 255;
-	}
-	for (int i = 0; i < gridHeight; i++) {
 		battlefield[0][i] = 255;
 	}
+	for (int i = 0; i < gridHeight; i++) {
+		battlefield[i][0] = 255;
+	}
 	for (int i = 0; i < gridWidth; i++) {
-		battlefield[i][gridHeight + 1] = 255;
+		battlefield[gridHeight + 1][i] = 255;
 	}
 	for (int i = 0; i < gridHeight; i++) {
-		battlefield[gridWidth + 1][i] = 255;
+		battlefield[i][gridWidth + 1] = 255;
 	}
 }
 
 void SetAllPositionsToZero() {
-	for (int i = 0; i < (gridWidth + 2); i++) {
-		for(int j = 0; j < (gridHeight + 2); j++){
+	for (int i = 0; i < (gridHeight + 2); i++) {
+		for(int j = 0; j < (gridWidth + 2); j++){
 			if (battlefield[i][j] != 255) {
 				battlefield[i][j] = 0;
 			}
@@ -219,18 +219,18 @@ void SetAllPositionsToZero() {
 	}
 }
 
-int GetRandomXColumn() {
+int GetRandomX() {
 	//int randomX = (rand() % (13 - 3 + 1)) + 3;
 	return (rand() % (13 - 3 + 1)) + 3;
 }
 
-int GetRandomYColumn() {
+int GetRandomY() {
 	return (rand() % (9 - 2 + 1)) + 2;
 }
 
 Vector2 GetRandomGridPosition() {
-	int randomX = GetRandomYColumn();
-	int randomY = GetRandomYColumn();
+	int randomX = GetRandomY();
+	int randomY = GetRandomY();
 
 	if (battlefield[randomX][randomY] != 255) {
 		Vector2 tempVector = { randomX, randomY };
@@ -254,7 +254,7 @@ void PlayTurn(Character* player, Character* ai, bool* isPlayerMoving, bool* isPl
 			*isPlayerFinishedMoving = true;
 			*isAiMoving = true;
 			SetAllPositionsToZero();
-			battlefield[player->currentGridPosition.x][player->currentGridPosition.y] = 255;
+			battlefield[player->currentGridPosition.y][player->currentGridPosition.x] = 255;
 		}
 	}
 	if (*isPlayerFinishedMoving && *isAiMoving) {
@@ -266,7 +266,7 @@ void PlayTurn(Character* player, Character* ai, bool* isPlayerMoving, bool* isPl
 			ai->gridDestination.y = 0;
 			*isAiMoving = false;
 			SetAllPositionsToZero();
-			battlefield[ai->currentGridPosition.x][ai->currentGridPosition.y] = 255;
+			battlefield[ai->currentGridPosition.y][ai->currentGridPosition.x] = 255;
 			*turn = nextTurn;
 		}
 	}
@@ -330,8 +330,8 @@ bool InitializeSDL(SDL_Renderer** renderer, SDL_Window** window) {
 	}
 
 	// Creating the window 1920x1080 (could be any other size)
-	*window = SDL_CreateWindow("HeroesOfMM",
-		0, 0,
+	*window = SDL_CreateWindow("HOMM",
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		horizontalRes, verticalRes,
 		SDL_WINDOW_SHOWN);
 
@@ -371,37 +371,37 @@ int main() {
 	}
 
 	//Ally block
-	Character char1({ 1,2 }, surface, renderer, "img/image.png");
-	Character char2({ 1,3 }, surface, renderer, "img/image.png");
-	Character char3({ 1,4 }, surface, renderer, "img/image.png");
-	Character char4({ 1,5 }, surface, renderer, "img/image.png");
-	Character char5({ 1,6 }, surface, renderer, "img/image.png");
-	Character char6({ 1,7 }, surface, renderer, "img/image.png");
-	Character char7({ 1,8 }, surface, renderer, "img/image.png");
-	Character char8({ 1,9 }, surface, renderer, "img/image.png");
+	Character char1({ 1,2 }, surface, renderer, "img/ally/cyclops.png");
+	Character char2({ 1,3 }, surface, renderer, "img/ally/double-dragon.png");
+	Character char3({ 1,4 }, surface, renderer, "img/ally/evil-minion.png");
+	Character char4({ 1,5 }, surface, renderer, "img/ally/hydra.png");
+	Character char5({ 1,6 }, surface, renderer, "img/ally/imp-laugh.png");
+	Character char6({ 1,7 }, surface, renderer, "img/ally/minotaur.png");
+	Character char7({ 1,8 }, surface, renderer, "img/ally/sea-dragon.png");
+	Character char8({ 1,9 }, surface, renderer, "img/ally/wyvern.png");
 
 	//Enemy block
-	Character enemy1({ 15,2 }, surface, renderer, "img/image.png");
-	Character enemy2({ 15,3 }, surface, renderer, "img/image.png");
-	Character enemy3({ 15,4 }, surface, renderer, "img/image.png");
-	Character enemy4({ 15,5 }, surface, renderer, "img/image.png");
-	Character enemy5({ 15,6 }, surface, renderer, "img/image.png");
-	Character enemy6({ 15,7 }, surface, renderer, "img/image.png");
-	Character enemy7({ 15,8 }, surface, renderer, "img/image.png");
-	Character enemy8({ 15,9 }, surface, renderer, "img/image.png");
+	Character enemy1({ 15,2 }, surface, renderer, "img/enemy/brute.png");
+	Character enemy2({ 15,3 }, surface, renderer, "img/enemy/bully-minion.png");
+	Character enemy3({ 15,4 }, surface, renderer, "img/enemy/centaur.png");
+	Character enemy4({ 15,5 }, surface, renderer, "img/enemy/fairy.png");
+	Character enemy5({ 15,6 }, surface, renderer, "img/enemy/griffin-symbol.png");
+	Character enemy6({ 15,7 }, surface, renderer, "img/enemy/mermaid.png");
+	Character enemy7({ 15,8 }, surface, renderer, "img/enemy/spiked-dragon-head.png");
+	Character enemy8({ 15,9 }, surface, renderer, "img/enemy/unicorn.png");
 
 	Character allUnits[]{
 		char1, enemy1, char2, enemy2, char3, enemy3, char4, enemy4, char5, enemy5, char6, enemy6, char7, enemy7, char8, enemy8
 	};
 
-	Obstacle obstacle1({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle2({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle3({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle4({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle5({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle6({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle7({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
-	Obstacle obstacle8({ GetRandomXColumn(), GetRandomYColumn() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle1({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle2({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle3({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle4({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle5({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle6({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle7({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
+	Obstacle obstacle8({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
 
 	SDL_FreeSurface(surface);
 
