@@ -170,7 +170,7 @@ void GrassfireAlgorithm() {
 							s = true;
 						}
 					}
-					if (j > gridHeight && (gridDown != 255 && gridDown < b)) {
+					if (j < gridHeight && (gridDown != 255 && gridDown < b)) {
 						if (battlefield[i][j + 1] == 0) {
 							battlefield[i][j + 1] = b;
 							s = true;
@@ -211,7 +211,7 @@ void SetArraySides() {
 
 void SetAllPositionsToZero() {
 	for (int i = 0; i < (gridWidth + 2); i++) {
-		for(int j = 0; j < (gridHeight + 2); i++){
+		for(int j = 0; j < (gridHeight + 2); j++){
 			if (battlefield[i][j] != 255) {
 				battlefield[i][j] = 0;
 			}
@@ -440,7 +440,7 @@ int main() {
 			}
 			else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN)
 			{
-				if (sdlEvent.button.button == SDL_BUTTON_RIGHT)
+				if (sdlEvent.button.button == SDL_BUTTON_LEFT)
 				{
 					isPlayerMoving = true;
 					SetAllPositionsToZero();
@@ -479,7 +479,6 @@ int main() {
 			PlayTurn(&char8, &enemy8, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 8, mousePosition);
 			break;
 		default:
-			printf("Something went wrong here...");
 			break;
 		}
 
