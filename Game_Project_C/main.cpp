@@ -4,10 +4,13 @@
 #define SDL_MAIN_HANDLED
 #include "libs/SDL2/SDL.h"
 #include "libs/SDL2/SDL_image.h"
+#include "libs/SDL2/SDL_ttf.h"
 #include "main.h"
 #include <Windows.h>
 
 typedef unsigned char uchar;
+
+const int fontSize = 24;
 
 const int horizontalRes = 1280;
 const int verticalRes = 720;
@@ -24,6 +27,7 @@ int allyUnitsCount = 8;
 int enemyUnitsCount = 8;
 
 SDL_Texture* SetTexture(SDL_Surface* surface, SDL_Renderer* renderer, const char* image_path);
+SDL_Renderer* publicRenderer;
 
 //Vector2 Struct
 struct Vector2 {
@@ -31,10 +35,28 @@ struct Vector2 {
 	int y;
 };
 
+//UI Struct
+struct UI {
+	Character character;
+	SDL_Color fontColor;
+	TTF_Font* fontFamily;
+	Vector2 textPosition;
+
+	UI(SDL_Texture* texture, Vector2 size, Vector2 position, TTF_Font* font, int units);
+	void InitializeText(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, const char* text);
+	void RenderText(SDL_Renderer* renderer, Vector2 position);
+	void SetNewText(SDL_Renderer* renderer, const char* text);
+};
+
+UI::UI(SDL_Texture* texture, Vector2 size, Vector2 position, TTF_Font* font, int units) {
+	InitializeText(publicRenderer, font, { 255,255,0 }, "Test");
+	SetNewText(publicRenderer, (const char*)units);
+}
+
 //Character Struct
 struct Character {
 	
-
+	UI ui;
 	SDL_Texture* texture;
 	Vector2 gridPosition;
 	Vector2 gridDestination;
@@ -45,7 +67,7 @@ struct Character {
 	float unitCount = 1;
 	float damageValue = 1;
 	bool isDead = false;
-	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage);
+	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage, SDL_Texture* fontText, Vector2 fontSurfaceSize, TTF_Font* font);
 	void PlaceCharacterOnGrid(Vector2 position);
 	void MoveCharacter(Vector2 destination);
 	void TakeDamage(float damageTaken);
@@ -55,7 +77,9 @@ struct Character {
 	~Character();
 };
 
-Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage) {
+Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage, SDL_Texture* fontText, Vector2 fontSurfaceSize, TTF_Font* font)
+	:ui(fontText, fontSurfaceSize, position, font, (int)unitCount)
+{
 
 	unitHealth = uHealth;
 	unitCount = uCount;
@@ -151,12 +175,9 @@ void Character::TakeDamage(float damageTaken) {
 }
 
 void Character::Die() {
-	SDL_Surface* surface;
-	SDL_Renderer* renderer;
 	const char* deathImage = "img/image.png";
 
 	isDead = true;
-	texture = SetTexture(surface, renderer, deathImage);
 	battlefield[gridPosition.y][gridPosition.x] = 255;
 }
 
