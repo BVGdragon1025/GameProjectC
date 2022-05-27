@@ -20,6 +20,9 @@ const int gridElementHeight = verticalRes / gridHeight;
 
 uchar battlefield[13][17];
 
+int allyUnitsCount = 8;
+int enemyUnitsCount = 8;
+
 SDL_Texture* SetTexture(SDL_Surface* surface, SDL_Renderer* renderer, const char* image_path);
 
 //Vector2 Struct
@@ -30,17 +33,34 @@ struct Vector2 {
 
 //Character Struct
 struct Character {
+	
+
 	SDL_Texture* texture;
 	Vector2 gridPosition;
 	Vector2 gridDestination;
 	Vector2 currentGridPosition = { 0,0 };
 	Vector2 pastGridPosition = { 0,0 };
-	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath);
+	float unitHealth = 1;
+	float totalHealth = 1;
+	float unitCount = 1;
+	float damageValue = 1;
+	bool isDead = false;
+	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage);
 	void PlaceCharacterOnGrid(Vector2 position);
 	void MoveCharacter(Vector2 destination);
+	void TakeDamage(float damageTaken);
+	void Die();
+
+
+	~Character();
 };
 
-Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath) {
+Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage) {
+
+	unitHealth = uHealth;
+	unitCount = uCount;
+	damageValue = damage;
+	totalHealth = uHealth * uCount;
 	PlaceCharacterOnGrid(position);
 	battlefield[MouseToGridPosition(gridPosition).y + 1][MouseToGridPosition(gridPosition).x + 1] = 255;
 	texture = SetTexture(surface, renderer, imagePath);
@@ -111,6 +131,36 @@ void Character::MoveCharacter(Vector2 destination) {
 		}
 	}
 }
+
+void Character::TakeDamage(float damageTaken) {
+	if (isDead) {
+		return;
+	}
+	totalHealth -= damageTaken;
+
+	int killedUnits = (int)damageTaken / unitHealth;
+	unitCount -= killedUnits;
+	if (unitCount * unitHealth > totalHealth) {
+		unitCount--;
+	}
+
+	if (totalHealth <= 0 || unitCount <= 0) {
+		Die();
+	}
+
+}
+
+void Character::Die() {
+	SDL_Surface* surface;
+	SDL_Renderer* renderer;
+	const char* deathImage = "img/image.png";
+
+	isDead = true;
+	texture = SetTexture(surface, renderer, deathImage);
+	battlefield[gridPosition.y][gridPosition.x] = 255;
+}
+
+Character::~Character(){}
 
 //Obstacle Struct
 struct Obstacle {
@@ -371,28 +421,31 @@ int main() {
 	}
 
 	//Ally block
-	Character char1({ 1,2 }, surface, renderer, "img/ally/cyclops.png");
-	Character char2({ 1,3 }, surface, renderer, "img/ally/double-dragon.png");
-	Character char3({ 1,4 }, surface, renderer, "img/ally/evil-minion.png");
-	Character char4({ 1,5 }, surface, renderer, "img/ally/hydra.png");
-	Character char5({ 1,6 }, surface, renderer, "img/ally/imp-laugh.png");
-	Character char6({ 1,7 }, surface, renderer, "img/ally/minotaur.png");
-	Character char7({ 1,8 }, surface, renderer, "img/ally/sea-dragon.png");
-	Character char8({ 1,9 }, surface, renderer, "img/ally/wyvern.png");
+	Character char1({ 1,2 }, surface, renderer, "img/ally/cyclops.png", 30, 5, 20);
+	Character char2({ 1,3 }, surface, renderer, "img/ally/double-dragon.png", 15, 5, 30);
+	Character char3({ 1,4 }, surface, renderer, "img/ally/evil-minion.png", 5, 30, 3);
+	Character char4({ 1,5 }, surface, renderer, "img/ally/hydra.png",20, 6, 15);
+	Character char5({ 1,6 }, surface, renderer, "img/ally/imp-laugh.png", 3, 40, 4);
+	Character char6({ 1,7 }, surface, renderer, "img/ally/minotaur.png", 25, 4, 32);
+	Character char7({ 1,8 }, surface, renderer, "img/ally/sea-dragon.png", 16, 5, 28);
+	Character char8({ 1,9 }, surface, renderer, "img/ally/wyvern.png", 18, 6, 26);
 
 	//Enemy block
-	Character enemy1({ 15,2 }, surface, renderer, "img/enemy/brute.png");
-	Character enemy2({ 15,3 }, surface, renderer, "img/enemy/bully-minion.png");
-	Character enemy3({ 15,4 }, surface, renderer, "img/enemy/centaur.png");
-	Character enemy4({ 15,5 }, surface, renderer, "img/enemy/fairy.png");
-	Character enemy5({ 15,6 }, surface, renderer, "img/enemy/griffin-symbol.png");
-	Character enemy6({ 15,7 }, surface, renderer, "img/enemy/mermaid.png");
-	Character enemy7({ 15,8 }, surface, renderer, "img/enemy/spiked-dragon-head.png");
-	Character enemy8({ 15,9 }, surface, renderer, "img/enemy/unicorn.png");
+	Character enemy1({ 15,2 }, surface, renderer, "img/enemy/brute.png", 15, 10, 8);
+	Character enemy2({ 15,3 }, surface, renderer, "img/enemy/bully-minion.png", 6, 25, 6);
+	Character enemy3({ 15,4 }, surface, renderer, "img/enemy/centaur.png", 18, 10, 5);
+	Character enemy4({ 15,5 }, surface, renderer, "img/enemy/fairy.png", 6, 25, 4);
+	Character enemy5({ 15,6 }, surface, renderer, "img/enemy/griffin-symbol.png", 12, 25, 12);
+	Character enemy6({ 15,7 }, surface, renderer, "img/enemy/mermaid.png", 8, 15, 9);
+	Character enemy7({ 15,8 }, surface, renderer, "img/enemy/spiked-dragon-head.png", 18, 6, 26);
+	Character enemy8({ 15,9 }, surface, renderer, "img/enemy/unicorn.png", 14, 16, 8);
 
-	Character allUnits[]{
+	/*Character allUnits[]{
 		char1, enemy1, char2, enemy2, char3, enemy3, char4, enemy4, char5, enemy5, char6, enemy6, char7, enemy7, char8, enemy8
-	};
+	};*/
+
+	Character* allyUnits[8] = { &char1, &char2, &char3, &char4, &char5, &char6, &char7, &char8 };
+	Character* enemyUnits[8] = { &enemy1, &enemy2, &enemy3, &enemy4, &enemy5, &enemy6, &enemy7, &enemy8 };
 
 	Obstacle obstacle1({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
 	Obstacle obstacle2({ GetRandomX(), GetRandomY() }, surface, renderer, "img/obstacle.png");
