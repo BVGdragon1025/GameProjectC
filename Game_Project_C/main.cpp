@@ -10,6 +10,7 @@
 
 typedef unsigned char uchar;
 
+const char fontPath[] = "fonts/FreeSansBold-Xgdd.ttf";
 const int fontSize = 24;
 
 const int horizontalRes = 1280;
@@ -35,59 +36,51 @@ struct Vector2 {
 	int y;
 };
 
-//UI Struct
-struct UI {
-	Character character;
-	SDL_Color fontColor;
-	TTF_Font* fontFamily;
-	Vector2 textPosition;
-
-	UI(SDL_Texture* texture, Vector2 size, Vector2 position, TTF_Font* font, int units);
-	void InitializeText(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, const char* text);
-	void RenderText(SDL_Renderer* renderer, Vector2 position);
-	void SetNewText(SDL_Renderer* renderer, const char* text);
-};
-
-UI::UI(SDL_Texture* texture, Vector2 size, Vector2 position, TTF_Font* font, int units) {
-	InitializeText(publicRenderer, font, { 255,255,0 }, "Test");
-	SetNewText(publicRenderer, (const char*)units);
-}
 
 //Character Struct
 struct Character {
 	
-	UI ui;
+
 	SDL_Texture* texture;
+	SDL_Texture* textTexture;
+	SDL_Rect rect;
+	SDL_Rect textRect;
+
 	Vector2 gridPosition;
 	Vector2 gridDestination;
 	Vector2 currentGridPosition = { 0,0 };
 	Vector2 pastGridPosition = { 0,0 };
-	float unitHealth = 1;
-	float totalHealth = 1;
-	float unitCount = 1;
-	float damageValue = 1;
+
+	float unitHealth = 0;
+	float unitCount = 0;
+	float damageValue = 0;
+
 	bool isDead = false;
-	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage, SDL_Texture* fontText, Vector2 fontSurfaceSize, TTF_Font* font);
+	bool disableImage = false;
+	bool updateHealth = false;
+
+	Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, SDL_Surface* textSurface , const char* imagePath, TTF_Font* font, float uHealth, float uCount, float damage);
 	void PlaceCharacterOnGrid(Vector2 position);
 	void MoveCharacter(Vector2 destination);
-	void TakeDamage(float damageTaken);
-	void Die();
+	void AttackEnemy();
+	void AttackEnemy(Character* enemy);
+	void HealthUpdate(SDL_Renderer* renderer, SDL_Surface* textSurface, TTF_Font* font);
 
 
 	~Character();
 };
 
-Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath, float uHealth, float uCount, float damage, SDL_Texture* fontText, Vector2 fontSurfaceSize, TTF_Font* font)
-	:ui(fontText, fontSurfaceSize, position, font, (int)unitCount)
+Character::Character(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, SDL_Surface* textSurface , const char* imagePath, TTF_Font* font , float uHealth, float uCount, float damage)
 {
 
 	unitHealth = uHealth;
 	unitCount = uCount;
 	damageValue = damage;
-	totalHealth = uHealth * uCount;
 	PlaceCharacterOnGrid(position);
 	battlefield[MouseToGridPosition(gridPosition).y + 1][MouseToGridPosition(gridPosition).x + 1] = 255;
 	texture = SetTexture(surface, renderer, imagePath);
+	textSurface = TTF_RenderText_Solid(font, CastToArray(unitCount), { 64,0,255 });
+	textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
 }
 
 void Character::PlaceCharacterOnGrid(Vector2 position) {
@@ -156,29 +149,44 @@ void Character::MoveCharacter(Vector2 destination) {
 	}
 }
 
-void Character::TakeDamage(float damageTaken) {
-	if (isDead) {
-		return;
-	}
-	totalHealth -= damageTaken;
+void Character::AttackEnemy(Character* enemy) {
+	int totalEnemyHealth = enemy->unitHealth * enemy->unitCount;
+	int totalHealth = unitHealth * unitCount;
+	int totalDamage = damageValue * unitCount;
+	int updatedEnemyHealth = totalEnemyHealth -= totalDamage;
 
-	int killedUnits = (int)damageTaken / unitHealth;
-	unitCount -= killedUnits;
-	if (unitCount * unitHealth > totalHealth) {
-		unitCount--;
-	}
+	if (updatedEnemyHealth > 0) {
+		int enemyUnitsDead = totalDamage / enemy->unitHealth;
+		enemy->unitCount = enemy->unitCount - enemyUnitsDead;
+		enemy->updateHealth = true;
 
-	if (totalHealth <= 0 || unitCount <= 0) {
-		Die();
+		int totalEnemyDamage = enemy->damageValue * enemy->unitCount;
+		int updatedHealth = totalHealth -= totalEnemyDamage;
+		if (updatedHealth > 0) {
+			int unitsDead = totalEnemyDamage / unitHealth;
+			unitCount -= unitsDead;
+			updateHealth = true;
+		}
+		else {
+			isDead = true;
+			disableImage = true;
+			battlefield[currentGridPosition.y][currentGridPosition.x] = 100;
+		}
 	}
-
+	else {
+		enemy->isDead = true;
+		enemy->disableImage = true;
+		battlefield[currentGridPosition.y][currentGridPosition.x] = 100;
+	}
 }
 
-void Character::Die() {
-	const char* deathImage = "img/image.png";
+void Character::HealthUpdate(SDL_Renderer* renderer, SDL_Surface* textSurface, TTF_Font* font) {
+	const char* unitCountText = CastToArray(unitCount);
 
-	isDead = true;
-	battlefield[gridPosition.y][gridPosition.x] = 255;
+	if (!isDead) {
+		textSurface = TTF_RenderText_Solid(font, unitCountText, { 0,0,255 });
+		textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+	}
 }
 
 Character::~Character(){}
@@ -186,6 +194,7 @@ Character::~Character(){}
 //Obstacle Struct
 struct Obstacle {
 	SDL_Texture* obstacleTexture;
+	SDL_Rect obstacleRect;
 	Vector2 obstaclePosition;
 	Obstacle(Vector2 position, SDL_Surface* surface, SDL_Renderer* renderer, const char* imagePath);
 	void PlaceObstacle();
@@ -265,6 +274,21 @@ void GrassfireAlgorithm() {
 	}
 }
 
+Vector2 SetEnemyDestination(Vector2 location) {
+	if (battlefield[location.y + 1][location.x + 2] != 255 && battlefield[location.y + 1][location.x + 2] != 200) {
+		return Vector2{ location.x + 1, location.y };
+	}
+	else if (battlefield[location.y + 1][location.x] != 255 && battlefield[location.y + 1][location.x] != 200) {
+		return Vector2{ location.x - 1,location.y };
+	}
+	else if (battlefield[location.y + 2][location.x + 1] != 255 && battlefield[location.y + 2][location.x + 1] != 200) {
+		return Vector2{ location.x, location.y + 1 };
+	}
+	else if (battlefield[location.y][location.x + 1] != 255 && battlefield[location.y][location.x + 1] != 200) {
+		return Vector2{ location.x, location.y - 1 };
+	}
+}
+
 void SetArraySides() {
 	for (int i = 0; i < gridWidth; i++) {
 		battlefield[0][i] = 255;
@@ -290,6 +314,16 @@ void SetAllPositionsToZero() {
 	}
 }
 
+char* CastToArray(int number) {
+	int n = log10(number) + 1;
+	char* numberArray = (char*)calloc(n, sizeof(char));
+	numberArray[n] = '\0';
+	for (int i = n - 1; i >= 0; --i, number /= 10) {
+		numberArray[i] = (number % 10) + '0';
+	}
+	return numberArray;
+}
+
 int GetRandomX() {
 	//int randomX = (rand() % (13 - 3 + 1)) + 3;
 	return (rand() % (13 - 3 + 1)) + 3;
@@ -297,6 +331,16 @@ int GetRandomX() {
 
 int GetRandomY() {
 	return (rand() % (9 - 2 + 1)) + 2;
+}
+
+int GetRandomEnemy(Character* characters[]) {
+	int random = (rand() % (7 - 0 + 1)) + 0;
+	if (!characters[random]->isDead) {
+		return random;
+	}
+	else {
+		GetRandomEnemy(characters);
+	}
 }
 
 Vector2 GetRandomGridPosition() {
@@ -313,31 +357,78 @@ Vector2 GetRandomGridPosition() {
 
 }
 
-void PlayTurn(Character* player, Character* ai, bool* isPlayerMoving, bool* isPlayerFinishedMoving, bool* isAiMoving, int* turn, int nextTurn, Vector2 mousePosition) {
+void PlayTurn(Character* player, Character* ai, bool* isPlayerMoving, bool* isPlayerFinishedMoving, bool* isAiMoving, int* turn, int nextTurn, Vector2 mousePosition, Character* enemyTarget, bool* playerMarkedEnemy, Character* playerTarget, int randomInt) {
 	if (*isPlayerMoving) {
+		if (!player->isDead) {
+			if (*playerMarkedEnemy) {
+				player->MoveCharacter(SetEnemyDestination({playerTarget->currentGridPosition.x -1, playerTarget->currentGridPosition.y -1}));
 
-		player->MoveCharacter(MouseToGridPosition(mousePosition));
+				if (player->currentGridPosition.x == player->gridDestination.x && player->currentGridPosition.y == player->gridDestination.y) {
+					player->gridDestination.x = 0;
+					player->gridDestination.y = 0;
+					*isPlayerMoving = false;
+					*isPlayerFinishedMoving = true;
+					*isAiMoving = true;
+					*playerMarkedEnemy = false;
+					SetAllPositionsToZero();
+					battlefield[player->currentGridPosition.y][player->currentGridPosition.x] = 255;
+				}
+			}
+			else {
+				player->MoveCharacter(MouseToGridPosition(mousePosition));
 
-		if (player->currentGridPosition.x == player->gridDestination.x && player->currentGridPosition.y == player->gridDestination.y) {
+				if (player->currentGridPosition.x == player->gridDestination.x && player->currentGridPosition.y == player->gridDestination.y) {
+					player->gridDestination.x = 0;
+					player->gridDestination.y = 0;
+					*isPlayerMoving = false;
+					*isPlayerFinishedMoving = true;
+					*isAiMoving = true;
+					SetAllPositionsToZero();
+					battlefield[player->currentGridPosition.y][player->currentGridPosition.x] = 255;
+				}
+			}
+		}
+		else if (player->isDead) {
 			player->gridDestination.x = 0;
 			player->gridDestination.y = 0;
 			*isPlayerMoving = false;
 			*isPlayerFinishedMoving = true;
 			*isAiMoving = true;
+			*playerMarkedEnemy = false;
 			SetAllPositionsToZero();
-			battlefield[player->currentGridPosition.y][player->currentGridPosition.x] = 255;
+			battlefield[player->currentGridPosition.y][player->currentGridPosition.x] = 100;
 		}
+
+		
 	}
 	if (*isPlayerFinishedMoving && *isAiMoving) {
+		if (!ai->isDead) {
+			if (randomInt < 6) {
+				ai->MoveCharacter(SetEnemyDestination({ ai->currentGridPosition.x - 1, ai->currentGridPosition.y - 1 }));
+			}
+			else {
+				ai->MoveCharacter(GetRandomGridPosition());
+			}
 
-		ai->MoveCharacter(GetRandomGridPosition());
+			if (ai->currentGridPosition.x == ai->gridDestination.x && ai->currentGridPosition.y == ai->gridDestination.y) {
+				if (randomInt < 6) {
+					ai->AttackEnemy(enemyTarget);
+				}
 
-		if (ai->currentGridPosition.x == ai->gridDestination.x && ai->currentGridPosition.y == ai->gridDestination.y) {
+				ai->gridDestination.x = 0;
+				ai->gridDestination.y = 0;
+				*isAiMoving = false;
+				SetAllPositionsToZero();
+				battlefield[ai->currentGridPosition.y][ai->currentGridPosition.x] = 255;
+				*turn = nextTurn;
+			}
+		}
+		else if (ai->isDead) {
 			ai->gridDestination.x = 0;
 			ai->gridDestination.y = 0;
 			*isAiMoving = false;
 			SetAllPositionsToZero();
-			battlefield[ai->currentGridPosition.y][ai->currentGridPosition.x] = 255;
+			battlefield[ai->currentGridPosition.y][ai->currentGridPosition.x] = 100;
 			*turn = nextTurn;
 		}
 	}
@@ -371,6 +462,13 @@ void SetRect(SDL_Rect* rect, Vector2 position) {
 
 }
 
+void SetTextRect(SDL_Rect* rect, Vector2 position) {
+	rect->x = (int)round(position.x - gridElementWidth / 2); // Counting from the image's center but that's up to you
+	rect->y = (int)round(position.y - gridElementHeight / 2); // Counting from the image's center but that's up to you
+	rect->w = fontSize;
+	rect->h = fontSize;
+}
+
 void DrawImage(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Rect rect)
 {
 	SDL_RenderCopyEx(renderer, // Already know what is that
@@ -380,6 +478,20 @@ void DrawImage(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Rect rect)
 		0, // An angle in degrees for rotation
 		nullptr, // The center of the rotation (when nullptr, the rect center is taken)
 		SDL_FLIP_NONE); // We don't want to flip the image
+}
+
+TTF_Font* GetCurrentFont() {
+	if (TTF_Init() < 0) {
+		abort();
+	}
+	TTF_Font* font = TTF_OpenFont(fontPath, fontSize);
+	if (font) {
+		return font;
+	}
+	else {
+		abort();
+	}
+		
 }
 
 bool InitializeSDL(SDL_Renderer** renderer, SDL_Window** window) {
@@ -421,10 +533,16 @@ bool InitializeSDL(SDL_Renderer** renderer, SDL_Window** window) {
 }
 
 int main() {
+	int randomInteger = 0;
+	int aiTarget = 0;
+
 	int turn = 0;
 	bool isPlayerMoving = false;
 	bool hasPlayerHinishedMove = false;
 	bool isAiMoving = false;
+	bool playerMarkedEnemy = false;
+
+	int enemyUnitIndex = 0;
 
 	srand(time(nullptr));
 
@@ -435,6 +553,9 @@ int main() {
 	SDL_Window* window = nullptr;
 	SDL_Surface* surface = nullptr;
 
+	SDL_Surface* textSurface = nullptr;
+	TTF_Font* font = GetCurrentFont();
+
 	bool isSDLInitialized = InitializeSDL(&renderer, &window);
 
 	if (!isSDLInitialized) {
@@ -442,24 +563,24 @@ int main() {
 	}
 
 	//Ally block
-	Character char1({ 1,2 }, surface, renderer, "img/ally/cyclops.png", 30, 5, 20);
-	Character char2({ 1,3 }, surface, renderer, "img/ally/double-dragon.png", 15, 5, 30);
-	Character char3({ 1,4 }, surface, renderer, "img/ally/evil-minion.png", 5, 30, 3);
-	Character char4({ 1,5 }, surface, renderer, "img/ally/hydra.png",20, 6, 15);
-	Character char5({ 1,6 }, surface, renderer, "img/ally/imp-laugh.png", 3, 40, 4);
-	Character char6({ 1,7 }, surface, renderer, "img/ally/minotaur.png", 25, 4, 32);
-	Character char7({ 1,8 }, surface, renderer, "img/ally/sea-dragon.png", 16, 5, 28);
-	Character char8({ 1,9 }, surface, renderer, "img/ally/wyvern.png", 18, 6, 26);
+	Character char1({ 1,2 }, surface, renderer, textSurface, "img/ally/cyclops.png", font, 30, 5, 20);
+	Character char2({ 1,3 }, surface, renderer, textSurface, "img/ally/double-dragon.png", font, 15, 5, 30);
+	Character char3({ 1,4 }, surface, renderer, textSurface, "img/ally/evil-minion.png", font, 5, 30, 3);
+	Character char4({ 1,5 }, surface, renderer, textSurface, "img/ally/hydra.png", font, 20, 6, 15);
+	Character char5({ 1,6 }, surface, renderer, textSurface, "img/ally/imp-laugh.png", font, 3, 40, 4);
+	Character char6({ 1,7 }, surface, renderer, textSurface, "img/ally/minotaur.png", font, 25, 4, 32);
+	Character char7({ 1,8 }, surface, renderer, textSurface, "img/ally/sea-dragon.png", font, 16, 5, 28);
+	Character char8({ 1,9 }, surface, renderer, textSurface, "img/ally/wyvern.png", font, 18, 6, 26);
 
 	//Enemy block
-	Character enemy1({ 15,2 }, surface, renderer, "img/enemy/brute.png", 15, 10, 8);
-	Character enemy2({ 15,3 }, surface, renderer, "img/enemy/bully-minion.png", 6, 25, 6);
-	Character enemy3({ 15,4 }, surface, renderer, "img/enemy/centaur.png", 18, 10, 5);
-	Character enemy4({ 15,5 }, surface, renderer, "img/enemy/fairy.png", 6, 25, 4);
-	Character enemy5({ 15,6 }, surface, renderer, "img/enemy/griffin-symbol.png", 12, 25, 12);
-	Character enemy6({ 15,7 }, surface, renderer, "img/enemy/mermaid.png", 8, 15, 9);
-	Character enemy7({ 15,8 }, surface, renderer, "img/enemy/spiked-dragon-head.png", 18, 6, 26);
-	Character enemy8({ 15,9 }, surface, renderer, "img/enemy/unicorn.png", 14, 16, 8);
+	Character enemy1({ 15,2 }, surface, renderer, textSurface, "img/enemy/brute.png", font, 15, 10, 8);
+	Character enemy2({ 15,3 }, surface, renderer, textSurface, "img/enemy/bully-minion.png", font, 6, 25, 6);
+	Character enemy3({ 15,4 }, surface, renderer, textSurface, "img/enemy/centaur.png", font, 18, 10, 5);
+	Character enemy4({ 15,5 }, surface, renderer, textSurface, "img/enemy/fairy.png", font, 6, 25, 4);
+	Character enemy5({ 15,6 }, surface, renderer, textSurface, "img/enemy/griffin-symbol.png", font, 12, 25, 12);
+	Character enemy6({ 15,7 }, surface, renderer, textSurface, "img/enemy/mermaid.png", font, 8, 15, 9);
+	Character enemy7({ 15,8 }, surface, renderer, textSurface, "img/enemy/spiked-dragon-head.png", font, 18, 6, 26);
+	Character enemy8({ 15,9 }, surface, renderer, textSurface, "img/enemy/unicorn.png", font, 14, 16, 8);
 
 	/*Character allUnits[]{
 		char1, enemy1, char2, enemy2, char3, enemy3, char4, enemy4, char5, enemy5, char6, enemy6, char7, enemy7, char8, enemy8
@@ -520,6 +641,17 @@ int main() {
 					SetAllPositionsToZero();
 
 					SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+					aiTarget = GetRandomEnemy(allyUnits);
+					randomInteger = GetRandomY();
+
+					Vector2 grid = MouseToGridPosition(mousePosition);
+
+					for (int i = 0; i < 8; i++) {
+						if (enemyUnits[i]->currentGridPosition.x == grid.x + 1 && enemyUnits[i]->currentGridPosition.y == grid.y + 1) {
+							playerMarkedEnemy = true;
+							enemyUnitIndex = i;
+						}
+					}
 				}
 			}
 		}
@@ -529,114 +661,91 @@ int main() {
 
 		switch (turn) {
 		case 0:
-			PlayTurn(&char1, &enemy1, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 1, mousePosition);
+			PlayTurn(&char1, &enemy1, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 1, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 1:
-			PlayTurn(&char2, &enemy2, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 2, mousePosition);
+			PlayTurn(&char2, &enemy2, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 2, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 2:
-			PlayTurn(&char3, &enemy3, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 3, mousePosition);
+			PlayTurn(&char3, &enemy3, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 3, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 3:
-			PlayTurn(&char4, &enemy4, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 4, mousePosition);
+			PlayTurn(&char4, &enemy4, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 4, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 4:
-			PlayTurn(&char5, &enemy5, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 5, mousePosition);
+			PlayTurn(&char5, &enemy5, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 5, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 5:
-			PlayTurn(&char6, &enemy6, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 6, mousePosition);
+			PlayTurn(&char6, &enemy6, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 6, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 6:
-			PlayTurn(&char7, &enemy7, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 7, mousePosition);
+			PlayTurn(&char7, &enemy7, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 7, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		case 7:
-			PlayTurn(&char8, &enemy8, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 8, mousePosition);
+			PlayTurn(&char8, &enemy8, &isPlayerMoving, &hasPlayerHinishedMove, &isAiMoving, &turn, 8, mousePosition, allyUnits[aiTarget], &playerMarkedEnemy, enemyUnits[enemyUnitIndex], randomInteger);
 			break;
 		default:
 			break;
 		}
 
 		// Here is the rectangle where the image will be on the screen
-		SDL_Rect rectChar1;
-		SDL_Rect rectChar2;
-		SDL_Rect rectChar3;
-		SDL_Rect rectChar4;
-		SDL_Rect rectChar5;
-		SDL_Rect rectChar6;
-		SDL_Rect rectChar7;
-		SDL_Rect rectChar8;
 
-		SDL_Rect rectEnemy1;
-		SDL_Rect rectEnemy2;
-		SDL_Rect rectEnemy3;
-		SDL_Rect rectEnemy4;
-		SDL_Rect rectEnemy5;
-		SDL_Rect rectEnemy6;
-		SDL_Rect rectEnemy7;
-		SDL_Rect rectEnemy8;
+		for (int i = 0; i < 8; i++) {
+			SetRect(&allyUnits[i]->rect, allyUnits[i]->gridPosition);
+			SetRect(&enemyUnits[i]->rect, enemyUnits[i]->gridPosition);
+			DrawImage(renderer, allyUnits[i]->texture, allyUnits[i]->rect);
+			DrawImage(renderer, enemyUnits[i]->texture, enemyUnits[i]->rect);
 
-		SDL_Rect rectObstacle1;
-		SDL_Rect rectObstacle2;
-		SDL_Rect rectObstacle3;
-		SDL_Rect rectObstacle4;
-		SDL_Rect rectObstacle5;
-		SDL_Rect rectObstacle6;
-		SDL_Rect rectObstacle7;
-		SDL_Rect rectObstacle8;
+			SetTextRect(&allyUnits[i]->textRect, allyUnits[i]->gridPosition);
+			SetTextRect(&enemyUnits[i]->textRect, enemyUnits[i]->gridPosition);
+			DrawImage(renderer, allyUnits[i]->textTexture, allyUnits[i]->textRect);
+			DrawImage(renderer, enemyUnits[i]->textTexture, enemyUnits[i]->textRect);
+		}
 
-		SetRect(&rectChar1, char1.gridPosition);
-		SetRect(&rectChar2, char2.gridPosition);
-		SetRect(&rectChar3, char3.gridPosition);
-		SetRect(&rectChar4, char4.gridPosition);
-		SetRect(&rectChar5, char5.gridPosition);
-		SetRect(&rectChar6, char6.gridPosition);
-		SetRect(&rectChar7, char7.gridPosition);
-		SetRect(&rectChar8, char8.gridPosition);
+		for (int i = 0; i < 8; i++) {
+			if (enemyUnits[i]->updateHealth && !enemyUnits[i]->isDead) {
+				enemyUnits[i]->HealthUpdate(renderer, textSurface, font);
+				enemyUnits[i]->updateHealth = false;
+			}
+			if (allyUnits[i]->updateHealth && !allyUnits[i]->isDead) {
+				allyUnits[i]->HealthUpdate(renderer, textSurface, font);
+				allyUnits[i]->updateHealth = false;
+			}
+		}
 
-		SetRect(&rectEnemy1, enemy1.gridPosition);
-		SetRect(&rectEnemy2, enemy2.gridPosition);
-		SetRect(&rectEnemy3, enemy3.gridPosition);
-		SetRect(&rectEnemy4, enemy4.gridPosition);
-		SetRect(&rectEnemy5, enemy5.gridPosition);
-		SetRect(&rectEnemy6, enemy6.gridPosition);
-		SetRect(&rectEnemy7, enemy7.gridPosition);
-		SetRect(&rectEnemy8, enemy8.gridPosition);
+		for (int i = 0; i < 8; i++) {
+			if (allyUnits[i]->isDead && allyUnits[i]->disableImage) {
+				allyUnits[i]->texture = SetTexture(surface, renderer, "img/ally/tombstone.png");
+				SDL_DestroyTexture(allyUnits[i]->textTexture);
+				allyUnits[i]->textTexture = SetTexture(surface, renderer, "img/no_health.png");
+				allyUnits[i]->disableImage = false;
+			}
+			if (enemyUnits[i]->isDead && enemyUnits[i]->disableImage) {
+				enemyUnits[i]->texture = SetTexture(surface, renderer, "img/ally/tombstone.png");
+				SDL_DestroyTexture(enemyUnits[i]->textTexture);
+				enemyUnits[i]->textTexture = SetTexture(surface, renderer, "img/no_health.png");
+				enemyUnits[i]->disableImage = false;
+			}
+		}
 
-		SetRect(&rectObstacle1, obstacle1.obstaclePosition);
-		SetRect(&rectObstacle2, obstacle2.obstaclePosition);
-		SetRect(&rectObstacle3, obstacle3.obstaclePosition);
-		SetRect(&rectObstacle4, obstacle4.obstaclePosition);
-		SetRect(&rectObstacle5, obstacle5.obstaclePosition);
-		SetRect(&rectObstacle6, obstacle6.obstaclePosition);
-		SetRect(&rectObstacle7, obstacle7.obstaclePosition);
-		SetRect(&rectObstacle8, obstacle8.obstaclePosition);
+		SetRect(&obstacle1.obstacleRect, obstacle1.obstaclePosition);
+		SetRect(&obstacle2.obstacleRect, obstacle2.obstaclePosition);
+		SetRect(&obstacle3.obstacleRect, obstacle3.obstaclePosition);
+		SetRect(&obstacle4.obstacleRect, obstacle4.obstaclePosition);
+		SetRect(&obstacle5.obstacleRect, obstacle5.obstaclePosition);
+		SetRect(&obstacle6.obstacleRect, obstacle6.obstaclePosition);
+		SetRect(&obstacle7.obstacleRect, obstacle7.obstaclePosition);
+		SetRect(&obstacle8.obstacleRect, obstacle8.obstaclePosition);
 
-		DrawImage(renderer, char1.texture, rectChar1);
-		DrawImage(renderer, char2.texture, rectChar2);
-		DrawImage(renderer, char3.texture, rectChar3);
-		DrawImage(renderer, char4.texture, rectChar4);
-		DrawImage(renderer, char5.texture, rectChar5);
-		DrawImage(renderer, char6.texture, rectChar6);
-		DrawImage(renderer, char7.texture, rectChar7);
-		DrawImage(renderer, char8.texture, rectChar8);
 
-		DrawImage(renderer, enemy1.texture, rectEnemy1);
-		DrawImage(renderer, enemy2.texture, rectEnemy2);
-		DrawImage(renderer, enemy3.texture, rectEnemy3);
-		DrawImage(renderer, enemy4.texture, rectEnemy4);
-		DrawImage(renderer, enemy5.texture, rectEnemy5);
-		DrawImage(renderer, enemy6.texture, rectEnemy6);
-		DrawImage(renderer, enemy7.texture, rectEnemy7);
-		DrawImage(renderer, enemy8.texture, rectEnemy8);
-
-		DrawImage(renderer, obstacle1.obstacleTexture, rectObstacle1);
-		DrawImage(renderer, obstacle2.obstacleTexture, rectObstacle2);
-		DrawImage(renderer, obstacle3.obstacleTexture, rectObstacle3);
-		DrawImage(renderer, obstacle4.obstacleTexture, rectObstacle4);
-		DrawImage(renderer, obstacle5.obstacleTexture, rectObstacle5);
-		DrawImage(renderer, obstacle6.obstacleTexture, rectObstacle6);
-		DrawImage(renderer, obstacle7.obstacleTexture, rectObstacle7);
-		DrawImage(renderer, obstacle8.obstacleTexture, rectObstacle8);
+		DrawImage(renderer, obstacle1.obstacleTexture, obstacle1.obstacleRect);
+		DrawImage(renderer, obstacle2.obstacleTexture, obstacle2.obstacleRect);
+		DrawImage(renderer, obstacle3.obstacleTexture, obstacle3.obstacleRect);
+		DrawImage(renderer, obstacle4.obstacleTexture, obstacle4.obstacleRect);
+		DrawImage(renderer, obstacle5.obstacleTexture, obstacle5.obstacleRect);
+		DrawImage(renderer, obstacle6.obstacleTexture, obstacle6.obstacleRect);
+		DrawImage(renderer, obstacle7.obstacleTexture, obstacle7.obstacleRect);
+		DrawImage(renderer, obstacle8.obstacleTexture, obstacle8.obstacleRect);
 
 		// Showing the screen to the player
 		SDL_RenderPresent(renderer);
@@ -646,6 +755,8 @@ int main() {
 	}
 	// If we reached here then the main loop stoped
 	// That means the game wants to quit
+
+	SDL_FreeSurface(textSurface);
 
 	// Shutting down the renderer
 	SDL_DestroyRenderer(renderer);
